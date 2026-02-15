@@ -23,7 +23,7 @@ def load_config() -> dict[str, Any]:
         "db_password": os.getenv("SOURCE_DB_PASSWORD", "112233"),
         "db_name": os.getenv("SOURCE_DB_NAME", "hos11253"),
         "db_charset": os.getenv("SOURCE_DB_CHARSET", "utf8mb4"),
-        "sql_base_dir": os.getenv("SQL_BASE_DIR", "../sync-scripts"),
+        "sql_base_dir": os.getenv("SQL_BASE_DIR", "sync-scripts"),
     }
 
 
