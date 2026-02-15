@@ -1,0 +1,41 @@
+-- 1. แยกรายประเภท export_code
+SELECT 
+  btc.hoscode,
+  btc.export_code,
+  btc.total_beds,
+  365 AS days_in_period,
+  btc.total_beds * 365 AS available_bed_days,
+  COALESCE(occ.total_patient_days, 0) AS total_patient_days,
+  ROUND(COALESCE(occ.total_patient_days, 0) * 100.0 / (btc.total_beds * 365), 2) AS occupancy_rate_pct
+FROM (
+  SELECT hoscode, export_code, COUNT(*) AS total_beds
+  FROM bed_type_all
+  GROUP BY hoscode, export_code
+) btc
+LEFT JOIN (
+  SELECT hoscode, export_code, SUM(overlap_days) AS total_patient_days
+  FROM bed_an_occupancy
+  GROUP BY hoscode, export_code
+) occ ON occ.hoscode = btc.hoscode AND occ.export_code = btc.export_code
+ORDER BY btc.export_code;
+
+-- 2. รวมทั้งหมด
+SELECT 
+  btc.hoscode,
+  'รวมทั้งหมด' AS export_code,
+  SUM(btc.total_beds) AS total_beds,
+  365 AS days_in_period,
+  SUM(btc.total_beds) * 365 AS available_bed_days,
+  SUM(COALESCE(occ.total_patient_days, 0)) AS total_patient_days,
+  ROUND(SUM(COALESCE(occ.total_patient_days, 0)) * 100.0 / (SUM(btc.total_beds) * 365), 2) AS occupancy_rate_pct
+FROM (
+  SELECT hoscode, export_code, COUNT(*) AS total_beds
+  FROM bed_type_all
+  GROUP BY hoscode, export_code
+) btc
+LEFT JOIN (
+  SELECT hoscode, export_code, SUM(overlap_days) AS total_patient_days
+  FROM bed_an_occupancy
+  GROUP BY hoscode, export_code
+) occ ON occ.hoscode = btc.hoscode AND occ.export_code = btc.export_code
+GROUP BY btc.hoscode;
