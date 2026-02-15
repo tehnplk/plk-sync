@@ -3,9 +3,9 @@ services:
     image: python:3.13-slim
     container_name: plk-sync-client
     volumes:
-      - ./client:/app:ro
+      - .:/app:ro
     env_file:
-      - ./client/.env
+      - .env
     environment:
       - TZ=Asia/Bangkok
     command: sh -c "pip install --quiet -r /app/requirements.txt && tail -f /dev/null"
