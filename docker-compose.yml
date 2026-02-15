@@ -1,0 +1,54 @@
+services:
+  plk-sync-client:
+    image: python:3.13-slim
+    container_name: plk-sync-client
+    volumes:
+      - ./client:/app:ro
+      - ./sync-scripts:/sync-scripts:ro
+    env_file:
+      - ./client/.env
+    environment:
+      - TZ=Asia/Bangkok
+    command: sh -c "pip install --quiet -r /app/requirements.txt && tail -f /dev/null"
+    restart: unless-stopped
+    labels:
+      ofelia.job-local.sync-bed-an-occupancy.schedule: "30 17 * * *"
+      ofelia.job-local.sync-bed-an-occupancy.command: "python /app/sync_client.py sync_bed_an_occupancy.sql"
+      ofelia.job-local.sync-bed-type-all.schedule: "30 18 * * *"
+      ofelia.job-local.sync-bed-type-all.command: "python /app/sync_client.py sync_bed_type_all.sql"
+      ofelia.job-local.sync-critical-wait-bed.schedule: "30 19 * * *"
+      ofelia.job-local.sync-critical-wait-bed.command: "python /app/sync_client.py sync_critical_wait_bed.sql"
+      ofelia.job-local.sync-drgs-rw-top10.schedule: "30 20 * * *"
+      ofelia.job-local.sync-drgs-rw-top10.command: "python /app/sync_client.py sync_drgs_rw_top10.sql"
+      ofelia.job-local.sync-drgs-sum.schedule: "30 21 * * *"
+      ofelia.job-local.sync-drgs-sum.command: "python /app/sync_client.py sync_drgs_sum.sql"
+      ofelia.job-local.sync-icu-semi-icu-case-realtime.schedule: "30 22 * * *"
+      ofelia.job-local.sync-icu-semi-icu-case-realtime.command: "python /app/sync_client.py sync_icu_semi_icu_case_realtime.sql"
+      ofelia.job-local.sync-icu-ward-death.schedule: "30 23 * * *"
+      ofelia.job-local.sync-icu-ward-death.command: "python /app/sync_client.py sync_icu_ward_death.sql"
+      ofelia.job-local.sync-mortality-ami.schedule: "30 0 * * *"
+      ofelia.job-local.sync-mortality-ami.command: "python /app/sync_client.py sync_mortality_ami.sql"
+      ofelia.job-local.sync-mortality-sepsis.schedule: "30 1 * * *"
+      ofelia.job-local.sync-mortality-sepsis.command: "python /app/sync_client.py sync_mortality_sepsis.sql"
+      ofelia.job-local.sync-normal-ward-death.schedule: "30 2 * * *"
+      ofelia.job-local.sync-normal-ward-death.command: "python /app/sync_client.py sync_normal_ward_death.sql"
+      ofelia.job-local.sync-or-utilization-rate.schedule: "30 3 * * *"
+      ofelia.job-local.sync-or-utilization-rate.command: "python /app/sync_client.py sync_or_utilization_rate.sql"
+      ofelia.job-local.sync-refer-paperless.schedule: "30 4 * * *"
+      ofelia.job-local.sync-refer-paperless.command: "python /app/sync_client.py sync_refer_paperless.sql"
+      ofelia.job-local.sync-refer-top10.schedule: "30 5 * * *"
+      ofelia.job-local.sync-refer-top10.command: "python /app/sync_client.py sync_refer_top10.sql"
+      ofelia.job-local.sync-waiting-time-cataract.schedule: "30 6 * * *"
+      ofelia.job-local.sync-waiting-time-cataract.command: "python /app/sync_client.py sync_waiting_time_cataract.sql"
+      ofelia.job-local.sync-waiting-time-hernia.schedule: "30 7 * * *"
+      ofelia.job-local.sync-waiting-time-hernia.command: "python /app/sync_client.py sync_waiting_time_hernia.sql"
+
+  ofelia:
+    image: mcuadros/ofelia:latest
+    container_name: ofelia
+    command: daemon --docker
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - TZ=Asia/Bangkok
+    restart: unless-stopped
