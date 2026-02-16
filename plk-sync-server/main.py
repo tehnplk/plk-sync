@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from psycopg.types.json import Json
 
+from config import settings
 from db import get_connection
 
 
@@ -57,3 +58,13 @@ def create_raw_record(request: RawCreateRequest):
             "sync_datetime": created[3],
         },
     }
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "main:app",
+        host=settings.api_host,
+        port=settings.api_port,
+        reload=True,
+    )
