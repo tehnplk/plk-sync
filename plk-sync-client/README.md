@@ -17,7 +17,7 @@ HIS_DB_HOST=host.docker.internal
 HIS_DB_PORT=3306
 HIS_DB_USER=root
 HIS_DB_PASSWORD=112233
-HIS_DB_NAME=hos11253
+HIS_DB_NAME=hos
 HIS_DB_CHARSET=utf8mb4
 
 SQL_BASE_DIR=/app/sync-scripts
