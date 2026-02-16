@@ -17,27 +17,10 @@ services:
     image: mcuadros/ofelia:latest
     container_name: ofelia
     restart: unless-stopped
-    command: daemon --docker --log-format=text
+    command: daemon --config=/etc/ofelia/config.ini
     environment:
       - TZ=Asia/Bangkok
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./ofelia_logs:/var/log/ofelia:rw # เก็บ Log การรันของ Ofelia เอง
-    labels:
-      # ตั้งค่าส่วนกลางของ Ofelia ให้บันทึก Log ลงโฟลเดอร์
-      ofelia.save-folder: "/var/log/ofelia"
-      
-      # --- Sync jobs ---
-      ofelia.job-exec.sync-bed-an-occupancy.schedule: "30 17 * * *"
-      ofelia.job-exec.sync-bed-an-occupancy.container: "sync-client"
-      ofelia.job-exec.sync-bed-an-occupancy.command: "python /app/sync_client.py sync_bed_an_occupancy.sql"
-
-      ofelia.job-exec.sync-bed-type-all.schedule: "0 18 * * *"
-      ofelia.job-exec.sync-bed-type-all.container: "sync-client"
-      ofelia.job-exec.sync-bed-type-all.command: "python /app/sync_client.py sync_bed_type_all.sql"
-
-      # ... (Job อื่นๆ ใส่ Labels ตามโครงสร้างเดิมของคุณได้เลย) ...
-
-      ofelia.job-exec.sync-waiting-time-hernia.schedule: "30 0 * * *"
-      ofelia.job-exec.sync-waiting-time-hernia.container: "sync-client"
-      ofelia.job-exec.sync-waiting-time-hernia.command: "python /app/sync_client.py sync_waiting_time_hernia.sql"
+      - ./ofelia_jobs.ini:/etc/ofelia/config.ini:ro
