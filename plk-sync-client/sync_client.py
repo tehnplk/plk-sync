@@ -3,6 +3,7 @@ import json
 import os
 import re
 import sys
+import time
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from pathlib import Path
@@ -10,7 +11,9 @@ from typing import Any
 
 import pymysql
 import requests
+from requests.adapters import HTTPAdapter
 from dotenv import load_dotenv
+from urllib3.util.retry import Retry
 
 ERROR_LOG_PATH = Path("logs/err_message.log")
 
@@ -19,7 +22,14 @@ def load_config() -> dict[str, Any]:
     load_dotenv()
     return {
         "api_url": os.getenv("API_URL", "http://localhost:8000/raw"),
+        "api_batch_url": os.getenv("API_BATCH_URL", ""),
         "request_timeout": int(os.getenv("REQUEST_TIMEOUT", "15")),
+        "post_sleep_ms": int(os.getenv("POST_SLEEP_MS", "300")),
+        "post_log_every": int(os.getenv("POST_LOG_EVERY", "100")),
+        "post_retry_total": int(os.getenv("POST_RETRY_TOTAL", "3")),
+        "post_retry_backoff": float(os.getenv("POST_RETRY_BACKOFF", "0.5")),
+        "post_retry_statuses": os.getenv("POST_RETRY_STATUSES", "429,500,502,503,504"),
+        "post_batch_size": int(os.getenv("POST_BATCH_SIZE", "1")),
         "db_host": os.getenv("HIS_DB_HOST", "127.0.0.1"),
         "db_port": int(os.getenv("HIS_DB_PORT", "3306")),
         "db_user": os.getenv("HIS_DB_USER", "root"),
@@ -95,44 +105,171 @@ def fetch_rows(config: dict[str, Any], sql_text: str) -> list[dict[str, Any]]:
             connection.close()
 
 
-def post_rows(api_url: str, timeout: int, sync_file: str, rows: list[dict[str, Any]]) -> tuple[int, int]:
+def parse_retry_statuses(raw_value: str) -> list[int]:
+    return [int(value.strip()) for value in raw_value.split(",") if value.strip().isdigit()]
+
+
+def build_session(config: dict[str, Any]) -> requests.Session:
+    statuses = parse_retry_statuses(config["post_retry_statuses"])
+    retry = Retry(
+        total=config["post_retry_total"],
+        backoff_factor=config["post_retry_backoff"],
+        status_forcelist=statuses,
+        allowed_methods={"POST"},
+        raise_on_status=False,
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    session = requests.Session()
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    return session
+
+
+def post_rows(
+    api_url: str,
+    timeout: int,
+    sync_file: str,
+    rows: list[dict[str, Any]],
+    config: dict[str, Any],
+) -> tuple[int, int]:
     success = 0
     failed = 0
+    sleep_seconds = config["post_sleep_ms"] / 1000
+    log_every = max(0, config["post_log_every"])
+    batch_size = max(1, config["post_batch_size"])
+    batch_url = config["api_batch_url"].strip()
+    session = build_session(config)
+    processed = 0
 
-    for row in rows:
-        hoscode = str(row.get("hoscode", "")).strip()
-        if not hoscode:
-            failed += 1
-            print("[SKIP] missing hoscode in row")
-            continue
-
-        sync_datetime_value = datetime.now(timezone.utc).isoformat()
-
-        payload = dict(row)
-
-        body = {
-            "hoscode": hoscode,
+    def build_body(row_data: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "hoscode": str(row_data.get("hoscode", "")).strip(),
             "source": sync_file,
-            "payload": payload,
-            "sync_datetime": sync_datetime_value,
+            "payload": dict(row_data),
+            "sync_datetime": datetime.now(timezone.utc).isoformat(),
         }
 
-        try:
-            response = requests.post(api_url, json=body, timeout=timeout)
-            if response.status_code < 300:
-                success += 1
-            else:
+    if batch_size > 1 and batch_url:
+        batch: list[tuple[int, dict[str, Any]]] = []
+        for index, row in enumerate(rows, start=1):
+            body = build_body(row)
+            if not body["hoscode"]:
                 failed += 1
-                append_error_log(
-                    f"post err: hoscode={hoscode} status={response.status_code} body={response.text}"
-                )
-                print(f"[FAIL] hoscode={hoscode} status={response.status_code} body={response.text}")
-        except requests.RequestException as error:
-            failed += 1
-            append_error_log(f"post err: hoscode={hoscode} error={error}")
-            print(f"[ERROR] hoscode={hoscode} error={error}")
+                append_error_log(f"post err: idx={index} missing hoscode")
+                print("[SKIP] missing hoscode in row")
+                continue
+            batch.append((index, body))
+            if len(batch) < batch_size:
+                continue
+
+            success, failed, processed = post_batch(
+                batch_url,
+                session,
+                batch,
+                timeout,
+                success,
+                failed,
+                processed,
+                log_every,
+            )
+            batch = []
+            time.sleep(sleep_seconds)
+
+        if batch:
+            success, failed, processed = post_batch(
+                batch_url,
+                session,
+                batch,
+                timeout,
+                success,
+                failed,
+                processed,
+                log_every,
+            )
+            time.sleep(sleep_seconds)
+    else:
+        for index, row in enumerate(rows, start=1):
+            hoscode = str(row.get("hoscode", "")).strip()
+            if not hoscode:
+                failed += 1
+                append_error_log(f"post err: idx={index} missing hoscode")
+                print(f"[SKIP] missing hoscode in row idx={index}")
+                continue
+
+            body = build_body(row)
+
+            try:
+                response = session.post(api_url, json=body, timeout=timeout)
+                if response.status_code < 300:
+                    success += 1
+                else:
+                    failed += 1
+                    append_error_log(
+                        "post err: idx={idx} hoscode={hoscode} "
+                        "status={status} body={body}".format(
+                            idx=index,
+                            hoscode=hoscode,
+                            status=response.status_code,
+                            body=response.text,
+                        )
+                    )
+                    print(
+                        f"[FAIL] idx={index} hoscode={hoscode} "
+                        f"status={response.status_code} body={response.text}"
+                    )
+            except requests.RequestException as error:
+                failed += 1
+                append_error_log(f"post err: idx={index} hoscode={hoscode} error={error}")
+                print(f"[ERROR] idx={index} hoscode={hoscode} error={error}")
+            finally:
+                processed += 1
+                if log_every and processed % log_every == 0:
+                    print(f"Progress: {processed}/{len(rows)} posted")
+                time.sleep(sleep_seconds)
 
     return success, failed
+
+
+def post_batch(
+    batch_url: str,
+    session: requests.Session,
+    batch: list[tuple[int, dict[str, Any]]],
+    timeout: int,
+    success: int,
+    failed: int,
+    processed: int,
+    log_every: int,
+) -> tuple[int, int, int]:
+    bodies = [body for _, body in batch]
+    try:
+        response = session.post(batch_url, json=bodies, timeout=timeout)
+        if response.status_code < 300:
+            success += len(bodies)
+        else:
+            failed += len(bodies)
+            append_error_log(
+                "post err: batch idx={start}-{end} status={status} body={body}".format(
+                    start=batch[0][0],
+                    end=batch[-1][0],
+                    status=response.status_code,
+                    body=response.text,
+                )
+            )
+            print(
+                f"[FAIL] batch idx={batch[0][0]}-{batch[-1][0]} "
+                f"status={response.status_code} body={response.text}"
+            )
+    except requests.RequestException as error:
+        failed += len(bodies)
+        append_error_log(
+            f"post err: batch idx={batch[0][0]}-{batch[-1][0]} error={error}"
+        )
+        print(f"[ERROR] batch idx={batch[0][0]}-{batch[-1][0]} error={error}")
+
+    processed += len(bodies)
+    if log_every and processed % log_every == 0:
+        print(f"Progress: {processed} rows posted")
+    return success, failed, processed
 
 
 def main() -> int:
@@ -158,7 +295,13 @@ def main() -> int:
         print(json.dumps(rows[0], ensure_ascii=False, indent=2))
         return 0
 
-    success, failed = post_rows(config["api_url"], config["request_timeout"], effective_file, rows)
+    success, failed = post_rows(
+        config["api_url"],
+        config["request_timeout"],
+        effective_file,
+        rows,
+        config,
+    )
     print(f"Sync finished ({effective_file}): success={success}, failed={failed}")
 
     return 0 if failed == 0 else 1
