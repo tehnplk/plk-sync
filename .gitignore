@@ -4,6 +4,7 @@
 # Local .env files
 *.env
 .env
+/plk-sync-client/.env
 
 # Logs
 logs/

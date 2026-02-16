@@ -15,6 +15,12 @@ cd plk-sync-client
 
 ## 1) เตรียมค่า `.env`
 
+คัดลอกไฟล์ตัวอย่างก่อน:
+
+```bash
+copy .env.example .env
+```
+
 กำหนดค่าในไฟล์ `.env` เช่น
 
 ```env
