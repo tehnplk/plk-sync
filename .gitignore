@@ -1,7 +1,12 @@
 /.env
 /.vscode
 
+# Local .env files
+*.env
+.env
+
 # Logs
 logs/
 *.log
 ofelia_logs/
+plk-sync-server/
