@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from psycopg.types.json import Json
 
 from config import settings
-from db import get_connection
+from db import close_connection_pool, get_connection, init_connection_pool
 
 
 class RawCreateRequest(BaseModel):
@@ -17,6 +17,16 @@ class RawCreateRequest(BaseModel):
 
 
 app = FastAPI(title="PLK Sync Raw API", version="1.0.0")
+
+
+@app.on_event("startup")
+def startup_event() -> None:
+    init_connection_pool()
+
+
+@app.on_event("shutdown")
+def shutdown_event() -> None:
+    close_connection_pool()
 
 
 @app.get("/health")
