@@ -17,12 +17,12 @@ def load_config() -> dict[str, Any]:
     return {
         "api_url": os.getenv("API_URL", "http://localhost:8000/raw"),
         "request_timeout": int(os.getenv("REQUEST_TIMEOUT", "15")),
-        "db_host": os.getenv("SOURCE_DB_HOST", "127.0.0.1"),
-        "db_port": int(os.getenv("SOURCE_DB_PORT", "3306")),
-        "db_user": os.getenv("SOURCE_DB_USER", "root"),
-        "db_password": os.getenv("SOURCE_DB_PASSWORD", "112233"),
-        "db_name": os.getenv("SOURCE_DB_NAME", "hos11253"),
-        "db_charset": os.getenv("SOURCE_DB_CHARSET", "utf8mb4"),
+        "db_host": os.getenv("HIS_DB_HOST", "127.0.0.1"),
+        "db_port": int(os.getenv("HIS_DB_PORT", "3306")),
+        "db_user": os.getenv("HIS_DB_USER", "root"),
+        "db_password": os.getenv("HIS_DB_PASSWORD", "112233"),
+        "db_name": os.getenv("HIS_DB_NAME", "hos11253"),
+        "db_charset": os.getenv("HIS_DB_CHARSET", "utf8mb4"),
         "sql_base_dir": os.getenv("SQL_BASE_DIR", "sync-scripts"),
     }
 
