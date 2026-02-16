@@ -59,6 +59,38 @@ def create_raw_record(request: RawCreateRequest):
         },
     }
 
+@app.get("/check_last")
+def check_last_record():
+    select_sql = """
+        SELECT hoscode, source, payload, sync_datetime, transform_datetime
+        FROM raw 
+        ORDER BY sync_datetime DESC 
+        LIMIT 1;
+    """
+    
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(select_sql)
+                result = cur.fetchone()
+                
+        if not result:
+            return {"message": "No records found", "data": None}
+            
+        return {
+            "message": "Last record found",
+            "data": {
+                "hoscode": result[0],
+                "source": result[1],
+                "payload": result[2],
+                "sync_datetime": result[3],
+                "transform_datetime": result[4],
+            }
+        }
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=f"Database query failed: {error}")
+
+
 if __name__ == "__main__":
     import uvicorn
 
