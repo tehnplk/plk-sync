@@ -5,15 +5,24 @@
 `sync-client` จะรัน SQL จากไฟล์ `sync_*.sql` แล้วส่งข้อมูลไปที่ API `POST /raw`  
 `ofelia` ทำหน้าที่ scheduler สำหรับ cron jobs
 
+## 0) เข้าโฟลเดอร์ย่อยก่อน
+
+```bash
+cd plk-sync-client
+```
+
+> ทุกคำสั่ง Docker ในเอกสารนี้ให้รันจากโฟลเดอร์ `plk-sync-client`
+
 ## 1) เตรียมค่า `.env`
 
 กำหนดค่าในไฟล์ `.env` เช่น
 
 ```env
-API_URL=http://<SERVER_IP>:8000/raw
+API_URL=http://61.19.112.242:8000/raw
 REQUEST_TIMEOUT=15
 
-HIS_DB_HOST=host.docker.internal
+# การเชื่อมต่อ HIS (Hosxp)
+HIS_DB_HOST=192.168.1.200
 HIS_DB_PORT=3306
 HIS_DB_USER=root
 HIS_DB_PASSWORD=112233
