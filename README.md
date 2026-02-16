@@ -65,7 +65,7 @@ docker exec -it sync-client python /app/sync_client.py sync_bed_type_all.sql
 
 ## 5) ตั้งเวลา cron jobs (Ofelia)
 
-แก้ไฟล์ `ofelia_jobs.ini` แล้ว restart ofelia
+แก้ไฟล์ `cron_jobs.ini` แล้ว restart ofelia
 
 ```bash
 docker-compose restart ofelia

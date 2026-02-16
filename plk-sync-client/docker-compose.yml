@@ -23,4 +23,4 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./ofelia_logs:/var/log/ofelia:rw # เก็บ Log การรันของ Ofelia เอง
-      - ./ofelia_jobs.ini:/etc/ofelia/config.ini:ro
+      - ./cron_jobs.ini:/etc/ofelia/config.ini:ro
