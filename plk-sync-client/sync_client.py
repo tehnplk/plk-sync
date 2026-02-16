@@ -12,6 +12,8 @@ import pymysql
 import requests
 from dotenv import load_dotenv
 
+ERROR_LOG_PATH = Path("logs/err_message.log")
+
 
 def load_config() -> dict[str, Any]:
     load_dotenv()
@@ -62,23 +64,35 @@ def read_sql(sql_path: Path) -> str:
     return sql_path.read_text(encoding="utf-8")
 
 
+def append_error_log(err_message: str) -> None:
+    ERROR_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with ERROR_LOG_PATH.open("a", encoding="utf-8") as log_file:
+        log_file.write(f"{date_time} , {err_message}\n")
+
+
 def fetch_rows(config: dict[str, Any], sql_text: str) -> list[dict[str, Any]]:
-    connection = pymysql.connect(
-        host=config["db_host"],
-        port=config["db_port"],
-        user=config["db_user"],
-        password=config["db_password"],
-        database=config["db_name"],
-        charset=config["db_charset"],
-        cursorclass=pymysql.cursors.DictCursor,
-    )
+    connection = None
     try:
+        connection = pymysql.connect(
+            host=config["db_host"],
+            port=config["db_port"],
+            user=config["db_user"],
+            password=config["db_password"],
+            database=config["db_name"],
+            charset=config["db_charset"],
+            cursorclass=pymysql.cursors.DictCursor,
+        )
         with connection.cursor() as cursor:
             cursor.execute(sql_text)
             rows = cursor.fetchall()
             return [normalize_row(row) for row in rows]
+    except Exception as error:
+        append_error_log(f"sql err: {error}")
+        raise
     finally:
-        connection.close()
+        if connection is not None:
+            connection.close()
 
 
 def post_rows(api_url: str, timeout: int, sync_file: str, rows: list[dict[str, Any]]) -> tuple[int, int]:
@@ -109,9 +123,13 @@ def post_rows(api_url: str, timeout: int, sync_file: str, rows: list[dict[str, A
                 success += 1
             else:
                 failed += 1
+                append_error_log(
+                    f"post err: hoscode={hoscode} status={response.status_code} body={response.text}"
+                )
                 print(f"[FAIL] hoscode={hoscode} status={response.status_code} body={response.text}")
         except requests.RequestException as error:
             failed += 1
+            append_error_log(f"post err: hoscode={hoscode} error={error}")
             print(f"[ERROR] hoscode={hoscode} error={error}")
 
     return success, failed
