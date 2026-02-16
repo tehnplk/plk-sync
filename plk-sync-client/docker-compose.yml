@@ -11,7 +11,7 @@ services:
       - .:/app:ro               # โค้ดโปรแกรม (Read-only)
       - ./logs:/app/logs:rw     # เก็บ Log จาก Python (Read-Write)
     # รัน SQL ทดสอบครั้งแรกตอนเริ่ม และเลี้ยงเครื่องไว้
-    command: sh -c "python /app/sync_client.py sync_test.sql && tail -f /dev/null"
+    command: sh -c "python /app/sync_client.py 0_sync_test.sql && tail -f /dev/null"
 
   ofelia:
     image: mcuadros/ofelia:latest

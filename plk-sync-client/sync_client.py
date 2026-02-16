@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import re
 import sys
 from datetime import date, datetime, timezone
 from decimal import Decimal
@@ -47,8 +48,8 @@ def resolve_sync_sql_path(sql_base_dir: str, sync_file: str) -> Path:
     if not name.endswith(".sql"):
         name = f"{name}.sql"
 
-    if not name.startswith("sync_"):
-        raise ValueError("sync file must start with 'sync_'")
+    if not re.match(r"^\d+_sync_", name):
+        raise ValueError("sync file must start with '<number>_sync_'")
 
     sql_path = Path(sql_base_dir) / name
     if not sql_path.exists():
@@ -117,8 +118,8 @@ def post_rows(api_url: str, timeout: int, sync_file: str, rows: list[dict[str, A
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Generic sync client for sync_*.sql")
-    parser.add_argument("sync_file", help="sync SQL file name, e.g. sync_bed_an_occupancy.sql")
+    parser = argparse.ArgumentParser(description="Generic sync client for <number>_sync_*.sql")
+    parser.add_argument("sync_file", help="sync SQL file name, e.g. 0_sync_test.sql")
     parser.add_argument("--dry-run", action="store_true", help="Print first payload without posting")
     args = parser.parse_args()
 
