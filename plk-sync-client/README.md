@@ -1,37 +1,82 @@
-# Client: sync_client
+# PLK Sync Client (Docker)
 
-สคริปต์นี้รัน SQL จากไฟล์ `sync_*.sql` (ส่งชื่อไฟล์ผ่าน args) กับฐานข้อมูลต้นทาง (MySQL) แล้วส่งแต่ละแถวเข้า FastAPI `POST /raw`.
+คู่มือนี้เน้นการใช้งานผ่าน Docker container เป็นหลัก
 
-## Setup
+`sync-client` จะรัน SQL จากไฟล์ `sync_*.sql` แล้วส่งข้อมูลไปที่ API `POST /raw`  
+`ofelia` ทำหน้าที่ scheduler สำหรับ cron jobs
 
-1. ติดตั้ง dependency
+## 1) เตรียมค่า `.env`
 
-```bash
-pip install -r requirements.txt
+กำหนดค่าในไฟล์ `.env` เช่น
+
+```env
+API_URL=http://<SERVER_IP>:8000/raw
+REQUEST_TIMEOUT=15
+
+HIS_DB_HOST=host.docker.internal
+HIS_DB_PORT=3306
+HIS_DB_USER=root
+HIS_DB_PASSWORD=112233
+HIS_DB_NAME=hos11253
+HIS_DB_CHARSET=utf8mb4
+
+SQL_BASE_DIR=/app/sync-scripts
 ```
 
-2. คัดลอก `.env.example` เป็น `.env` แล้วแก้ค่าให้ตรงระบบ
-
-## Run
+## 2) Start services
 
 ```bash
-python sync_client.py sync_bed_an_occupancy.sql
+docker-compose up -d --build
 ```
 
-หรือส่งเฉพาะชื่อ (ไม่ต้องใส่ `.sql`):
+จะได้ 2 containers:
+
+- `sync-client`
+- `ofelia`
+
+## 3) ตรวจสอบสถานะ
 
 ```bash
-python sync_client.py sync_drgs_sum
+docker ps
+docker logs sync-client
+docker logs ofelia
 ```
 
-## Test แบบไม่พึ่ง DB ต้นทาง
+## 4) สั่งรัน SQL ด้วยตนเองใน container
 
 ```bash
-python sync_client.py sync_bed_an_occupancy.sql --mock
+docker exec -it sync-client python /app/sync_client.py sync_test.sql
 ```
 
-## Dry run
+ตัวอย่างไฟล์อื่น:
 
 ```bash
-python sync_client.py sync_bed_an_occupancy.sql --dry-run
+docker exec -it sync-client python /app/sync_client.py sync_bed_type_all.sql
+```
+
+## 5) ตั้งเวลา cron jobs (Ofelia)
+
+แก้ไฟล์ `ofelia_jobs.ini` แล้ว restart ofelia
+
+```bash
+docker-compose restart ofelia
+```
+
+ตัวอย่าง schedule:
+
+- ทุก 1 นาที: `* * * * *`
+- ทุก 30 วินาที: `@every 30s`
+
+## 6) Restart ทั้งระบบ
+
+```bash
+docker-compose down
+docker-compose up -d --build
+```
+
+## 7) ดูไฟล์ log
+
+```bash
+dir ofelia_logs
+dir logs
 ```
