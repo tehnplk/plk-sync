@@ -11,3 +11,4 @@ logs/
 *.log
 ofelia_logs/
 plk-sync-server/
+/docker-cmd

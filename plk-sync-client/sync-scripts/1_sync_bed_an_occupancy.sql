@@ -1,7 +1,7 @@
 -- hos ส่งข้อมูล --
 SELECT
   (SELECT hospitalcode FROM opdconfig LIMIT 1) AS hoscode
- ,'xxxxxx' AS an_censored
+ ,UPPER(md5(i.an)) AS an_censored
  ,a.bedno
  ,b.export_code
  ,i.regdate
