@@ -27,7 +27,7 @@ copy .env.example .env
 API_URL=http://61.19.112.242:8000/raw
 REQUEST_TIMEOUT=15
 
-# การเชื่อมต่อ HIS (Hosxp)
+# การเชื่อมต่อ HIS (Slave)
 HIS_DB_HOST=192.168.1.200
 HIS_DB_PORT=3306
 HIS_DB_USER=root
