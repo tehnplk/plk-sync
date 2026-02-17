@@ -36,6 +36,11 @@ def load_config() -> dict[str, Any]:
         "db_password": os.getenv("HIS_DB_PASSWORD", "112233"),
         "db_name": os.getenv("HIS_DB_NAME", "hos11253"),
         "db_charset": os.getenv("HIS_DB_CHARSET", "utf8mb4"),
+        "db_connect_timeout": int(os.getenv("HIS_DB_CONNECT_TIMEOUT", "10")),
+        "db_read_timeout": int(os.getenv("HIS_DB_READ_TIMEOUT", "60")),
+        "db_write_timeout": int(os.getenv("HIS_DB_WRITE_TIMEOUT", "60")),
+        "db_retry_total": int(os.getenv("HIS_DB_RETRY_TOTAL", "2")),
+        "db_retry_backoff": float(os.getenv("HIS_DB_RETRY_BACKOFF", "0.5")),
         "sql_base_dir": os.getenv("SQL_BASE_DIR", "sync-scripts"),
     }
 
@@ -81,28 +86,49 @@ def append_error_log(err_message: str) -> None:
         log_file.write(f"{date_time} , {err_message}\n")
 
 
+def is_retryable_mysql_error(error: Exception) -> bool:
+    if isinstance(error, (pymysql.err.OperationalError, pymysql.err.InterfaceError)):
+        code = error.args[0] if error.args else None
+        return code in {2006, 2013, 2014, 2055}
+    return "Lost connection to MySQL server" in str(error)
+
+
 def fetch_rows(config: dict[str, Any], sql_text: str) -> list[dict[str, Any]]:
-    connection = None
-    try:
-        connection = pymysql.connect(
-            host=config["db_host"],
-            port=config["db_port"],
-            user=config["db_user"],
-            password=config["db_password"],
-            database=config["db_name"],
-            charset=config["db_charset"],
-            cursorclass=pymysql.cursors.DictCursor,
-        )
-        with connection.cursor() as cursor:
-            cursor.execute(sql_text)
-            rows = cursor.fetchall()
-            return [normalize_row(row) for row in rows]
-    except Exception as error:
-        append_error_log(f"sql err: {error}")
-        raise
-    finally:
-        if connection is not None:
-            connection.close()
+    retries = max(0, config["db_retry_total"])
+    backoff = config["db_retry_backoff"]
+    last_error: Exception | None = None
+    for attempt in range(retries + 1):
+        connection = None
+        try:
+            connection = pymysql.connect(
+                host=config["db_host"],
+                port=config["db_port"],
+                user=config["db_user"],
+                password=config["db_password"],
+                database=config["db_name"],
+                charset=config["db_charset"],
+                cursorclass=pymysql.cursors.DictCursor,
+                connect_timeout=config["db_connect_timeout"],
+                read_timeout=config["db_read_timeout"],
+                write_timeout=config["db_write_timeout"],
+            )
+            connection.ping(reconnect=True)
+            with connection.cursor() as cursor:
+                cursor.execute(sql_text)
+                rows = cursor.fetchall()
+                return [normalize_row(row) for row in rows]
+        except Exception as error:
+            last_error = error
+            append_error_log(f"sql err: attempt={attempt + 1}/{retries + 1} error={error}")
+            if not is_retryable_mysql_error(error) or attempt >= retries:
+                raise
+            time.sleep(backoff * (2**attempt))
+        finally:
+            if connection is not None:
+                connection.close()
+    if last_error:
+        raise last_error
+    return []
 
 
 def parse_retry_statuses(raw_value: str) -> list[int]:
