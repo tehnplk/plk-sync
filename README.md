@@ -3,7 +3,7 @@
 คู่มือนี้เน้นการใช้งานผ่าน Docker container เป็นหลัก
 
 `sync-client` จะรัน SQL จากไฟล์ `sync_*.sql` แล้วส่งข้อมูลไปที่ API `POST /raw`  
-`ofelia` ทำหน้าที่ scheduler สำหรับ cron jobs
+Scheduler ใช้ `cron` ภายใน container
 
 ## 0) เข้าโฟลเดอร์ย่อยก่อน
 
@@ -41,20 +41,18 @@ SQL_BASE_DIR=/app/sync-scripts
 ## 2) Start services
 
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
-จะได้ 2 containers:
+จะได้ 1 container:
 
 - `sync-client`
-- `ofelia`
 
 ## 3) ตรวจสอบสถานะ
 
 ```bash
 docker ps
 docker logs sync-client
-docker logs ofelia
 ```
 
 ## 4) สั่งรัน SQL ด้วยตนเองใน container
@@ -69,29 +67,26 @@ docker exec -it sync-client python /app/sync_client.py 0_sync_test.sql
 docker exec -it sync-client python /app/sync_client.py 2_sync_bed_type_all.sql
 ```
 
-## 5) ตั้งเวลา cron jobs (Ofelia)
+## 5) ตั้งเวลา cron jobs (ใน container)
 
-แก้ไฟล์ `cron_jobs.ini` แล้ว restart ofelia
+แก้ไฟล์ `plk-sync-client/cron.d/sync-client` แล้ว rebuild + restart container
 
 ```bash
-docker-compose restart ofelia
+docker compose down
+docker compose up -d --build
 ```
 
-ตัวอย่าง schedule:
-
-- ทุก 1 นาที: `* * * * *`
-- ทุก 30 วินาที: `@every 30s`
+> หมายเหตุ: ตอนบูท container จะรัน `0_sync_test.sql` 1 ครั้งผ่าน entrypoint ก่อนเริ่ม cron
 
 ## 6) Restart ทั้งระบบ
 
 ```bash
-docker-compose down
-docker-compose up -d --build
+docker compose down
+docker compose up -d --build
 ```
 
 ## 7) ดูไฟล์ log
 
 ```bash
-dir ofelia_logs
 dir logs
 ```
