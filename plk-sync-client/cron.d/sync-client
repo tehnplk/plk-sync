@@ -2,19 +2,19 @@ SHELL=/bin/sh
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 TZ=Asia/Bangkok
 
-30 7 * * * root sh -c "date '+\%Y-\%m-\%d \%H:\%M:\%S , sync-test trigger' >> /app/logs/sync_test_trigger.log && /usr/local/bin/python /app/sync_client.py 0_sync_test.sql" >> /app/logs/cron.log 2>&1
-0 8 * * * root /usr/local/bin/python /app/sync_client.py 1_sync_bed_an_occupancy.sql >> /app/logs/cron.log 2>&1
-30 8 * * * root /usr/local/bin/python /app/sync_client.py 2_sync_bed_type_all.sql >> /app/logs/cron.log 2>&1
-0 9 * * * root /usr/local/bin/python /app/sync_client.py 3_sync_critical_wait_bed.sql >> /app/logs/cron.log 2>&1
-30 9 * * * root /usr/local/bin/python /app/sync_client.py 4_sync_drgs_rw_top10.sql >> /app/logs/cron.log 2>&1
-0 10 * * * root /usr/local/bin/python /app/sync_client.py 5_sync_drgs_sum.sql >> /app/logs/cron.log 2>&1
-30 10 * * * root /usr/local/bin/python /app/sync_client.py 6_sync_icu_semi_icu_case_realtime.sql >> /app/logs/cron.log 2>&1
-0 11 * * * root /usr/local/bin/python /app/sync_client.py 7_sync_icu_ward_death.sql >> /app/logs/cron.log 2>&1
-30 11 * * * root /usr/local/bin/python /app/sync_client.py 8_sync_mortality_ami.sql >> /app/logs/cron.log 2>&1
-0 12 * * * root /usr/local/bin/python /app/sync_client.py 9_sync_mortality_sepsis.sql >> /app/logs/cron.log 2>&1
-30 12 * * * root /usr/local/bin/python /app/sync_client.py 10_sync_normal_ward_death.sql >> /app/logs/cron.log 2>&1
-0 13 * * * root /usr/local/bin/python /app/sync_client.py 11_sync_or_utilization_rate.sql >> /app/logs/cron.log 2>&1
-30 13 * * * root /usr/local/bin/python /app/sync_client.py 12_sync_refer_paperless.sql >> /app/logs/cron.log 2>&1
-0 14 * * * root /usr/local/bin/python /app/sync_client.py 13_sync_refer_top10.sql >> /app/logs/cron.log 2>&1
-30 14 * * * root /usr/local/bin/python /app/sync_client.py 14_sync_waiting_time_cataract.sql >> /app/logs/cron.log 2>&1
-0 15 * * * root /usr/local/bin/python /app/sync_client.py 15_sync_waiting_time_hernia.sql >> /app/logs/cron.log 2>&1
+*/30 * * * * root sh -c "date '+\%Y-\%m-\%d \%H:\%M:\%S , sync-test trigger' >> /app/logs/sync_test_trigger.log && /usr/local/bin/python /app/sync_client.py 0_sync_test.sql" >> /app/logs/cron.log 2>&1
+30 7 * * * root /usr/local/bin/python /app/sync_client.py 1_sync_bed_an_occupancy.sql >> /app/logs/cron.log 2>&1
+0 8 * * * root /usr/local/bin/python /app/sync_client.py 2_sync_bed_type_all.sql >> /app/logs/cron.log 2>&1
+30 8 * * * root /usr/local/bin/python /app/sync_client.py 3_sync_critical_wait_bed.sql >> /app/logs/cron.log 2>&1
+0 9 * * * root /usr/local/bin/python /app/sync_client.py 4_sync_drgs_rw_top10.sql >> /app/logs/cron.log 2>&1
+30 9 * * * root /usr/local/bin/python /app/sync_client.py 5_sync_drgs_sum.sql >> /app/logs/cron.log 2>&1
+0 10 * * * root /usr/local/bin/python /app/sync_client.py 6_sync_icu_semi_icu_case_realtime.sql >> /app/logs/cron.log 2>&1
+30 10 * * * root /usr/local/bin/python /app/sync_client.py 7_sync_icu_ward_death.sql >> /app/logs/cron.log 2>&1
+0 11 * * * root /usr/local/bin/python /app/sync_client.py 8_sync_mortality_ami.sql >> /app/logs/cron.log 2>&1
+30 11 * * * root /usr/local/bin/python /app/sync_client.py 9_sync_mortality_sepsis.sql >> /app/logs/cron.log 2>&1
+0 12 * * * root /usr/local/bin/python /app/sync_client.py 10_sync_normal_ward_death.sql >> /app/logs/cron.log 2>&1
+30 12 * * * root /usr/local/bin/python /app/sync_client.py 11_sync_or_utilization_rate.sql >> /app/logs/cron.log 2>&1
+0 13 * * * root /usr/local/bin/python /app/sync_client.py 12_sync_refer_paperless.sql >> /app/logs/cron.log 2>&1
+30 13 * * * root /usr/local/bin/python /app/sync_client.py 13_sync_refer_top10.sql >> /app/logs/cron.log 2>&1
+0 14 * * * root /usr/local/bin/python /app/sync_client.py 14_sync_waiting_time_cataract.sql >> /app/logs/cron.log 2>&1
+30 14 * * * root /usr/local/bin/python /app/sync_client.py 15_sync_waiting_time_hernia.sql >> /app/logs/cron.log 2>&1
