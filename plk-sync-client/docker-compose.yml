@@ -1,7 +1,7 @@
 services:
-  sync-client:
+  app:
     build: .
-    container_name: plk-sync-client
+    container_name: plk-sync
     restart: unless-stopped
 
     env_file:

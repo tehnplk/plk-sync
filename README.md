@@ -46,25 +46,25 @@ docker compose up -d --build
 
 จะได้ 1 container:
 
-- `sync-client`
+- `plk-sync`
 
 ## 3) ตรวจสอบสถานะ
 
 ```bash
 docker ps
-docker logs plk-sync-client
+docker logs plk-sync
 ```
 
 ## 4) สั่งรัน SQL ด้วยตนเองใน container
 
 ```bash
-docker exec -it plk-sync-client python /app/sync_client.py 0_sync_test.sql
+docker exec -it plk-sync python /app/sync_client.py 0_sync_test.sql
 ```
 
 ตัวอย่างไฟล์อื่น:
 
 ```bash
-docker exec -it plk-sync-client python /app/sync_client.py 2_sync_bed_type_all.sql
+docker exec -it plk-sync python /app/sync_client.py 2_sync_bed_type_all.sql
 ```
 
 ## 5) ตั้งเวลา cron jobs (ใน container)
