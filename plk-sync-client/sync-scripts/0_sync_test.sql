@@ -3,7 +3,7 @@
 
 SELECT 
     (SELECT hospitalcode FROM opdconfig LIMIT 1) AS hoscode,
-    '1.0.2-20260217' as version,
+    '1.0.3-20260218' as version,
     NOW() as d_update
     
 LIMIT 1;

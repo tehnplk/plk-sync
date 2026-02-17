@@ -3,6 +3,7 @@ services:
     build: .
     container_name: sync-client
     restart: unless-stopped
+
     env_file:
       - .env
     environment:
@@ -10,17 +11,3 @@ services:
     volumes:
       - .:/app:ro               # โค้ดโปรแกรม (Read-only)
       - ./logs:/app/logs:rw     # เก็บ Log จาก Python (Read-Write)
-    # รัน SQL ทดสอบครั้งแรกตอนเริ่ม และเลี้ยงเครื่องไว้
-    command: sh -c "python /app/sync_client.py 0_sync_test.sql && tail -f /dev/null"
-
-  ofelia:
-    image: mcuadros/ofelia:latest
-    container_name: ofelia
-    restart: unless-stopped
-    command: daemon --config=/etc/ofelia/config.ini
-    environment:
-      - TZ=Asia/Bangkok
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./ofelia_logs:/var/log/ofelia:rw # เก็บ Log การรันของ Ofelia เอง
-      - ./cron_jobs.ini:/etc/ofelia/config.ini:ro

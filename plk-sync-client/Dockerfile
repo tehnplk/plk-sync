@@ -8,6 +8,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     gcc \
     libpq-dev \
+    cron \
     tzdata \
     && rm -rf /var/lib/apt/lists/*
 
@@ -22,5 +23,9 @@ COPY . .
 # สร้างโฟลเดอร์สำหรับเก็บ Log ภายใน Container
 RUN mkdir -p /app/logs
 
-# สั่งให้ Container รันค้างไว้เพื่อรอ Ofelia มาเรียกใช้งาน
-CMD ["tail", "-f", "/dev/null"]
+# ติดตั้ง cron job จากไฟล์ภายใน image
+COPY cron.d/sync-client /etc/cron.d/sync-client
+RUN chmod 0644 /etc/cron.d/sync-client
+
+# รัน cron ใน foreground
+CMD ["cron", "-f"]
