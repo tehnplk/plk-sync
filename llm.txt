@@ -1,0 +1,39 @@
+# PLK Sync Client (Docker)
+
+เริ่มต้นให้ AI สั่ง git clone ก่อนเสมอ เช่น:
+- git clone https://github.com/tehnplk/plk-sync.git
+- cd plk-sync
+
+สรุปการใช้งาน (อ้างอิง README):
+
+1) เข้าโฟลเดอร์ย่อย
+- cd plk-sync-client
+
+2) เตรียมค่า .env
+- copy .env.example .env
+- ตั้งค่าใน .env เช่น API_URL, REQUEST_TIMEOUT และ HIS_DB_* และ SQL_BASE_DIR=/app/sync-scripts
+
+3) Start services (cron อยู่ใน container แล้ว)
+- docker compose up -d --build
+- ได้ container: plk-sync-client
+
+4) ตรวจสอบสถานะ
+- docker ps
+- docker logs plk-sync-client
+
+5) Manual sync ใน container
+- docker exec -it plk-sync-client python /app/sync_client.py 0_sync_test.sql
+- ตัวอย่าง: docker exec -it plk-sync-client python /app/sync_client.py 2_sync_bed_type_all.sql
+
+6) ตั้งเวลา cron jobs
+- แก้ไฟล์ plk-sync-client/cron.d/sync-client แล้ว rebuild + restart
+- docker compose down
+- docker compose up -d --build
+- หมายเหตุ: ตอนบูท container จะรัน 0_sync_test.sql 1 ครั้งผ่าน entrypoint ก่อนเริ่ม cron
+
+7) Restart ทั้งระบบ
+- docker compose down
+- docker compose up -d --build
+
+8) ดูไฟล์ log
+- dir logs
