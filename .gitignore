@@ -12,3 +12,7 @@ logs/
 ofelia_logs/
 plk-sync-server/
 /docker-cmd
+
+# Database dumps
+datacenter_backup.dump
+datacenter_backup.remote.dump
