@@ -16,3 +16,9 @@ plk-sync-server/
 # Database dumps
 datacenter_backup.dump
 datacenter_backup.remote.dump
+
+# Ignore all .get folders
+**/.get/
+
+# Ignore all nested .git folders
+**/.git/
