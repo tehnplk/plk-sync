@@ -22,3 +22,6 @@ datacenter_backup.remote.dump
 
 # Ignore all nested .git folders
 **/.git/
+
+# Ignore .gitignore itself
+.gitignore
