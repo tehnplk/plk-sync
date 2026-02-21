@@ -5,13 +5,13 @@
 `sync-client` จะรัน SQL จากไฟล์ `sync_*.sql` แล้วส่งข้อมูลไปที่ API `POST /raw`  
 Scheduler ใช้ `cron` ภายใน container
 
-## 0) เข้าโฟลเดอร์ย่อยก่อน
+## 0) รันคำสั่งจากโฟลเดอร์ root ของโปรเจกต์
 
 ```bash
-cd plk-sync-client
+cd plk-sync
 ```
 
-> ทุกคำสั่ง Docker ในเอกสารนี้ให้รันจากโฟลเดอร์ `plk-sync-client`
+> ทุกคำสั่ง Docker ในเอกสารนี้ให้รันจากโฟลเดอร์ root (ที่มีไฟล์ `docker-compose.yml`)
 
 ## 1) เตรียมค่า `.env`
 
@@ -69,7 +69,7 @@ docker exec -it plk-sync python /app/sync_client.py 2_sync_bed_type_all.sql
 
 ## 5) ตั้งเวลา cron jobs (ใน container)
 
-แก้ไฟล์ `plk-sync-client/cron.d/sync-client` แล้ว rebuild + restart container
+แก้ไฟล์ `cron.d/sync-client` แล้ว rebuild + restart container
 
 ```bash
 docker compose down

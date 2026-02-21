@@ -6,8 +6,8 @@
 
 สรุปการใช้งาน (อ้างอิง README):
 
-1) เข้าโฟลเดอร์ย่อย
-- cd plk-sync-client
+1) เข้าโฟลเดอร์โปรเจกต์
+- cd plk-sync
 
 2) เตรียมค่า .env
 - copy .env.example .env
@@ -26,7 +26,7 @@
 - ตัวอย่าง: docker exec -it plk-sync python /app/sync_client.py 2_sync_bed_type_all.sql
 
 6) ตั้งเวลา cron jobs
-- แก้ไฟล์ plk-sync-client/cron.d/sync-client แล้ว rebuild + restart
+- แก้ไฟล์ cron.d/sync-client แล้ว rebuild + restart
 - docker compose down
 - docker compose up -d --build
 - หมายเหตุ: ตอนบูท container จะรัน 0_sync_test.sql 1 ครั้งผ่าน entrypoint ก่อนเริ่ม cron

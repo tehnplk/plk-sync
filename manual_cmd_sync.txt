@@ -1,0 +1,16 @@
+docker exec -it plk-sync python /app/sync_client.py 0_sync_test.sql
+docker exec -it plk-sync python /app/sync_client.py 1_sync_bed_an_occupancy.sql
+docker exec -it plk-sync python /app/sync_client.py 2_sync_bed_type_all.sql
+docker exec -it plk-sync python /app/sync_client.py 3_sync_critical_wait_bed.sql
+docker exec -it plk-sync python /app/sync_client.py 4_sync_drgs_rw_top10.sql
+docker exec -it plk-sync python /app/sync_client.py 5_sync_drgs_sum.sql
+docker exec -it plk-sync python /app/sync_client.py 6_sync_icu_semi_icu_case_realtime.sql
+docker exec -it plk-sync python /app/sync_client.py 7_sync_icu_ward_death.sql
+docker exec -it plk-sync python /app/sync_client.py 8_sync_mortality_ami.sql
+docker exec -it plk-sync python /app/sync_client.py 9_sync_mortality_sepsis.sql
+docker exec -it plk-sync python /app/sync_client.py 10_sync_normal_ward_death.sql
+docker exec -it plk-sync python /app/sync_client.py 11_sync_or_utilization_rate.sql
+docker exec -it plk-sync python /app/sync_client.py 12_sync_refer_paperless.sql
+docker exec -it plk-sync python /app/sync_client.py 13_sync_refer_top10.sql
+docker exec -it plk-sync python /app/sync_client.py 14_sync_waiting_time_cataract.sql
+docker exec -it plk-sync python /app/sync_client.py 15_sync_waiting_time_hernia.sql
