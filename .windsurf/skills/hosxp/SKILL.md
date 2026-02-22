@@ -107,11 +107,15 @@ LIMIT 10;
 - `vn_stat`: สรุปข้อมูลการมารับบริการ OPD แต่ละครั้ง
 - `ovstdiag`: การวินิจฉัยโรค OPD
 - `opitemrece`: รายการค่าใช้จ่าย ยา และเวชภัณฑ์
+- `pttype`: Lookup สิทธิการรักษา (ผูกกับ `ovst.pttype` หรือ `vn_stat.pttype`)
 
 ### กลุ่มตาราง IPD
 
 - `ipt`: ข้อมูลการเข้ารับการรักษาของผู้ป่วยใน (IPD)
 - `iptdiag`: การวินิจฉัยโรค IPD
+- `ipt` (ฟิลด์ `rw`, `adjrw`): ค่า RW/AdjRW (ใช้คำนวณ CMI/วิเคราะห์ภาระงาน)
+- `ipt` (ฟิลด์ `drg`, `mdc`, `grouper_version`): ผล DRG/MDC และเวอร์ชัน Grouper
+- `ipt_drg_result`: ตารางผลประมวลผล DRG (DRG, MDC, RW, AdjRW, error/warn) แยกตาม `an`
 - `ipt_bed_stat`: ข้อมูลสถิติการครองเตียงของผู้ป่วย
 - `bedno`: ทะเบียนเตียง
 
