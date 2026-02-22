@@ -8,6 +8,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     gcc \
     libpq-dev \
+    curl \
     cron \
     tzdata \
     && rm -rf /var/lib/apt/lists/*
@@ -26,6 +27,9 @@ RUN mkdir -p /app/logs
 # ติดตั้ง cron job จากไฟล์ภายใน image
 COPY cron.d/sync-client /etc/cron.d/sync-client
 RUN chmod 0644 /etc/cron.d/sync-client
+
+# register cron file
+RUN crontab /etc/cron.d/sync-client
 
 # entrypoint สำหรับรันงานครั้งแรกก่อนเริ่ม cron
 COPY entrypoint.sh /entrypoint.sh

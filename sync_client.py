@@ -6,7 +6,6 @@ import sys
 import time
 from datetime import date, datetime, timezone
 from decimal import Decimal
-from pathlib import Path
 from typing import Any
 
 import pymysql
@@ -15,7 +14,7 @@ from requests.adapters import HTTPAdapter
 from dotenv import load_dotenv
 from urllib3.util.retry import Retry
 
-ERROR_LOG_PATH = Path("logs/err_message.log")
+ERROR_LOG_PATH = os.path.join("logs", "err_message.log")
 
 
 def load_config() -> dict[str, Any]:
@@ -23,6 +22,7 @@ def load_config() -> dict[str, Any]:
     return {
         "api_url": os.getenv("API_URL", "http://localhost:8000/raw"),
         "api_batch_url": os.getenv("API_BATCH_URL", ""),
+        "sync_scripts_url": os.getenv("SYNC_SCRIPTS_URL", "").strip(),
         "request_timeout": int(os.getenv("REQUEST_TIMEOUT", "15")),
         "post_sleep_ms": int(os.getenv("POST_SLEEP_MS", "300")),
         "post_log_every": int(os.getenv("POST_LOG_EVERY", "100")),
@@ -41,7 +41,6 @@ def load_config() -> dict[str, Any]:
         "db_write_timeout": int(os.getenv("HIS_DB_WRITE_TIMEOUT", "60")),
         "db_retry_total": int(os.getenv("HIS_DB_RETRY_TOTAL", "2")),
         "db_retry_backoff": float(os.getenv("HIS_DB_RETRY_BACKOFF", "0.5")),
-        "sql_base_dir": os.getenv("SQL_BASE_DIR", "sync-scripts"),
     }
 
 
@@ -57,32 +56,95 @@ def normalize_row(row: dict[str, Any]) -> dict[str, Any]:
     return {key: normalize_value(value) for key, value in row.items()}
 
 
-def resolve_sync_sql_path(sql_base_dir: str, sync_file: str) -> Path:
+def fetch_scripts_index(config: dict[str, Any], sync_scripts_url: str) -> dict[str, Any]:
+    base = sync_scripts_url.rstrip("/")
+    timeout = int(config["request_timeout"])
+    session = build_session(config)
+    response = session.get(base, timeout=timeout)
+    response.raise_for_status()
+    payload = response.json()
+    if not isinstance(payload, dict):
+        raise ValueError("sync scripts index must be a JSON object")
+    return payload
+
+
+def run_single_sync(
+    config: dict[str, Any],
+    effective_file: str,
+    sql_text: str,
+    dry_run: bool,
+) -> int:
+    rows = fetch_rows(config, sql_text)
+
+    if not rows:
+        print(f"No data to sync ({effective_file})")
+        return 0
+
+    print(f"Rows prepared ({effective_file}): {len(rows)}")
+
+    if dry_run:
+        print(json.dumps(rows[0], ensure_ascii=False, indent=2))
+        return 0
+
+    success, failed = post_rows(
+        config["api_url"],
+        config["request_timeout"],
+        effective_file,
+        rows,
+        config,
+    )
+    print(f"Sync finished ({effective_file}): success={success}, failed={failed}")
+    return 0 if failed == 0 else 1
+
+
+def fetch_sql_from_endpoint(
+    config: dict[str, Any],
+    sync_scripts_url: str,
+    sync_file: str,
+) -> tuple[str, str]:
     name = sync_file.strip()
     if not name:
         raise ValueError("sync file name is required")
-
     if not name.endswith(".sql"):
         name = f"{name}.sql"
-
     if not re.match(r"^\d+_sync_", name):
         raise ValueError("sync file must start with '<number>_sync_'")
 
-    sql_path = Path(sql_base_dir) / name
-    if not sql_path.exists():
-        raise FileNotFoundError(f"SQL file not found: {sql_path}")
+    base = sync_scripts_url.rstrip("/")
+    url = f"{base}/{name}"
+    timeout = int(config["request_timeout"])
+    session = build_session(config)
+    response = session.get(url, timeout=timeout)
+    if response.status_code == 404:
+        payload = fetch_scripts_index(config, sync_scripts_url)
+        if name not in payload:
+            raise FileNotFoundError(f"SQL not found on endpoint: {name}")
+        entry = payload.get(name) or {}
+        sql_text = str(entry.get("sql", ""))
+        if not sql_text.strip():
+            raise ValueError(f"empty SQL from endpoint index for: {name}")
+        return name, sql_text
 
-    return sql_path
+    response.raise_for_status()
+    content_type = response.headers.get("content-type", "").lower()
+    if "application/json" in content_type:
+        payload = response.json()
+        if isinstance(payload, dict) and "sql" in payload:
+            sql_text = str(payload.get("sql", ""))
+        else:
+            raise ValueError(f"unexpected JSON format from endpoint: {url}")
+    else:
+        sql_text = response.text
 
-
-def read_sql(sql_path: Path) -> str:
-    return sql_path.read_text(encoding="utf-8")
+    if not sql_text.strip():
+        raise ValueError(f"empty SQL from endpoint: {url}")
+    return name, sql_text
 
 
 def append_error_log(err_message: str) -> None:
-    ERROR_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    os.makedirs(os.path.dirname(ERROR_LOG_PATH), exist_ok=True)
     date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with ERROR_LOG_PATH.open("a", encoding="utf-8") as log_file:
+    with open(ERROR_LOG_PATH, "a", encoding="utf-8") as log_file:
         log_file.write(f"{date_time} , {err_message}\n")
 
 
@@ -141,7 +203,7 @@ def build_session(config: dict[str, Any]) -> requests.Session:
         total=config["post_retry_total"],
         backoff_factor=config["post_retry_backoff"],
         status_forcelist=statuses,
-        allowed_methods={"POST"},
+        allowed_methods={"POST", "GET"},
         raise_on_status=False,
     )
     adapter = HTTPAdapter(max_retries=retry)
@@ -305,32 +367,17 @@ def main() -> int:
     args = parser.parse_args()
 
     config = load_config()
+    sync_scripts_url = config["sync_scripts_url"].strip()
+    if not sync_scripts_url:
+        raise ValueError("SYNC_SCRIPTS_URL is required")
 
-    sql_path = resolve_sync_sql_path(config["sql_base_dir"], args.sync_file)
-    effective_file = sql_path.name
-    sql_text = read_sql(sql_path)
-    rows = fetch_rows(config, sql_text)
-
-    if not rows:
-        print("No data to sync")
-        return 0
-
-    print(f"Rows prepared: {len(rows)}")
-
-    if args.dry_run:
-        print(json.dumps(rows[0], ensure_ascii=False, indent=2))
-        return 0
-
-    success, failed = post_rows(
-        config["api_url"],
-        config["request_timeout"],
-        effective_file,
-        rows,
+    effective_file, sql_text = fetch_sql_from_endpoint(
         config,
+        sync_scripts_url,
+        args.sync_file,
     )
-    print(f"Sync finished ({effective_file}): success={success}, failed={failed}")
 
-    return 0 if failed == 0 else 1
+    return run_single_sync(config, effective_file, sql_text, args.dry_run)
 
 
 if __name__ == "__main__":

@@ -11,3 +11,4 @@ services:
     volumes:
       - .:/app:ro               # โค้ดโปรแกรม (Read-only)
       - ./logs:/app/logs:rw     # เก็บ Log จาก Python (Read-Write)
+    command: ["/entrypoint.sh"]

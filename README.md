@@ -25,6 +25,7 @@ copy .env.example .env
 
 ```env
 API_URL=http://61.19.112.242:8000/raw
+SYNC_SCRIPTS_URL=http://61.19.112.242:8000/sync-scripts
 REQUEST_TIMEOUT=15
 
 # การเชื่อมต่อ HIS (Slave)
@@ -34,8 +35,6 @@ HIS_DB_USER=root
 HIS_DB_PASSWORD=112233
 HIS_DB_NAME=hos
 HIS_DB_CHARSET=utf8mb4
-
-SQL_BASE_DIR=/app/sync-scripts
 ```
 
 ## 2) Start services
@@ -58,13 +57,13 @@ docker logs plk-sync
 ## 4) สั่งรัน SQL ด้วยตนเองใน container
 
 ```bash
-docker exec -it plk-sync python /app/sync_client.py 0_sync_test.sql
+docker exec -it plk-sync python /app/sync_client.py 000_sync_test.sql
 ```
 
 ตัวอย่างไฟล์อื่น:
 
 ```bash
-docker exec -it plk-sync python /app/sync_client.py 2_sync_bed_type_all.sql
+docker exec -it plk-sync python /app/sync_client.py 002_sync_bed_type_all.sql
 ```
 
 ## 5) ตั้งเวลา cron jobs (ใน container)
@@ -76,7 +75,7 @@ docker compose down
 docker compose up -d --build
 ```
 
-> หมายเหตุ: ตอนบูท container จะรัน `0_sync_test.sql` 1 ครั้งผ่าน entrypoint ก่อนเริ่ม cron
+> หมายเหตุ: ตอนบูท container จะรัน `000_sync_test.sql` 1 ครั้งผ่าน entrypoint ก่อนเริ่ม cron
 
 ## 6) Restart ทั้งระบบ
 
