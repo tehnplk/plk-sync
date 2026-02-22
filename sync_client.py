@@ -132,6 +132,10 @@ def fetch_sql_from_endpoint(
         if isinstance(payload, dict) and "sql" in payload:
             sql_text = str(payload.get("sql", ""))
             is_active = bool(payload.get("activate", False))
+        elif isinstance(payload, dict) and isinstance(payload.get("data"), dict):
+            data = payload.get("data") or {}
+            sql_text = str(data.get("sql", ""))
+            is_active = bool(data.get("activate", False))
         else:
             raise ValueError(f"unexpected JSON format from endpoint: {url}")
     else:
