@@ -28,9 +28,6 @@ RUN mkdir -p /app/logs
 COPY cron.d/sync-client /etc/cron.d/sync-client
 RUN chmod 0644 /etc/cron.d/sync-client
 
-# register cron file
-RUN crontab /etc/cron.d/sync-client
-
 # entrypoint สำหรับรันงานครั้งแรกก่อนเริ่ม cron
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
