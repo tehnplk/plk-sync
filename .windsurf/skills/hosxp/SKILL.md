@@ -25,6 +25,12 @@ license: MIT
 docker exec -i mariadb mysql --default-character-set=utf8 -uroot -p112233 hos11253 -e "SELECT ..."
 ```
 
+หมายเหตุ (PowerShell): หากต้องการรัน SQL จากไฟล์ บน Windows PowerShell ใช้การ pipe แทนการ redirect ด้วย `<`
+
+```powershell
+Get-Content .\query.sql | docker exec -i mariadb mysql --default-character-set=utf8 -uroot -p112233 hos11253
+```
+
 ### ค้นหาความสัมพันธ์ของตาราง
 
 ใช้ `notebooklm` skill เพื่อวิเคราะห์โครงสร้างและความสัมพันธ์ระหว่างตาราง
@@ -130,6 +136,26 @@ LIMIT 10;
 - `xray_head`: ข้อมูลใบสั่ง X-ray (Header)
 - `xray_order`: รายการ X-ray และผลอ่าน
 - `xray_items`: รหัสมาตรฐานรายการ X-ray
+
+หมายเหตุ: บางหน่วยงานอาจไม่ได้เก็บรายละเอียดรายการที่สั่งใน `xray_order` แต่เก็บเป็นข้อความรวมใน `xray_head.xray_list` (ชนิด `text`) แทน
+
+ตัวอย่าง: ดึงผู้ป่วยที่มีรายการ CXR ในปี 2025 (ค้นจาก `xray_head.xray_list`)
+
+```sql
+SELECT
+    DATE_FORMAT(xh.order_date,'%Y-%m-%d') AS order_date,
+    xh.vn,
+    xh.hn,
+    CONCAT(IFNULL(p.pname,''), IFNULL(p.fname,''), ' ', IFNULL(p.lname,'')) AS patient_name,
+    xh.department_name,
+    xh.xray_list
+FROM xray_head xh
+LEFT JOIN patient p ON p.hn = xh.hn
+WHERE YEAR(xh.order_date) = 2025
+  AND xh.xray_list LIKE '%CXR%'
+ORDER BY xh.order_date, xh.vn
+LIMIT 20;
+```
 
 ### กลุ่มตาราง ทันตกรรม
 
