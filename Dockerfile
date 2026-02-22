@@ -26,7 +26,7 @@ RUN mkdir -p /app/logs
 
 # ติดตั้ง cron job จากไฟล์ภายใน image
 COPY cron.d/sync-client /etc/cron.d/sync-client
-RUN chmod 0644 /etc/cron.d/sync-client
+RUN sed -i 's/\r//' /etc/cron.d/sync-client && chmod 0644 /etc/cron.d/sync-client
 
 # entrypoint สำหรับรันงานครั้งแรกก่อนเริ่ม cron
 COPY entrypoint.sh /entrypoint.sh
