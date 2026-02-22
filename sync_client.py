@@ -101,7 +101,7 @@ def fetch_sql_from_endpoint(
     config: dict[str, Any],
     sync_scripts_url: str,
     sync_file: str,
-) -> tuple[str, str]:
+) -> tuple[str, str, bool]:
     name = sync_file.strip()
     if not name:
         raise ValueError("sync file name is required")
@@ -118,27 +118,30 @@ def fetch_sql_from_endpoint(
     if response.status_code == 404:
         payload = fetch_scripts_index(config, sync_scripts_url)
         if name not in payload:
-            raise FileNotFoundError(f"SQL not found on endpoint: {name}")
+            return name, "", False
         entry = payload.get(name) or {}
         sql_text = str(entry.get("sql", ""))
-        if not sql_text.strip():
-            raise ValueError(f"empty SQL from endpoint index for: {name}")
-        return name, sql_text
+        is_active = bool(entry.get("activate", False))
+        return name, sql_text, is_active
 
     response.raise_for_status()
     content_type = response.headers.get("content-type", "").lower()
+    is_active = False
     if "application/json" in content_type:
         payload = response.json()
         if isinstance(payload, dict) and "sql" in payload:
             sql_text = str(payload.get("sql", ""))
+            is_active = bool(payload.get("activate", False))
         else:
             raise ValueError(f"unexpected JSON format from endpoint: {url}")
     else:
         sql_text = response.text
+        # If it's plain text, we might not have an activate flag, but typically we read from index.
+        # We'll default to True for plain text backward compatibility if needed, or False based on strict rules.
+        # But let's assume if it returns 200 plain text, we allow it (or you can force False).
+        is_active = True
 
-    if not sql_text.strip():
-        raise ValueError(f"empty SQL from endpoint: {url}")
-    return name, sql_text
+    return name, sql_text, is_active
 
 
 def append_error_log(err_message: str) -> None:
@@ -371,11 +374,19 @@ def main() -> int:
     if not sync_scripts_url:
         raise ValueError("SYNC_SCRIPTS_URL is required")
 
-    effective_file, sql_text = fetch_sql_from_endpoint(
+    effective_file, sql_text, is_active = fetch_sql_from_endpoint(
         config,
         sync_scripts_url,
         args.sync_file,
     )
+
+    if not sql_text.strip():
+        print(f"ไม่พบ script นี้บน server: {effective_file}")
+        return 0
+
+    if not is_active:
+        print(f"[SKIP] script นี้ถูกปิดใช้งาน (activate=False): {effective_file}")
+        return 0
 
     return run_single_sync(config, effective_file, sql_text, args.dry_run)
 

@@ -18,3 +18,4 @@ TZ=Asia/Bangkok
 5 1-23/3 * * * root /usr/local/bin/python /app/sync_client.py 013_sync_refer_top10.sql >> /app/logs/cron.log 2>&1
 10 1-23/3 * * * root /usr/local/bin/python /app/sync_client.py 014_sync_waiting_time_cataract.sql >> /app/logs/cron.log 2>&1
 15 1-23/3 * * * root /usr/local/bin/python /app/sync_client.py 015_sync_waiting_time_hernia.sql >> /app/logs/cron.log 2>&1
+55 * * * * root /usr/local/bin/python /app/sync_client.py 999_sync_custom.sql >> /app/logs/cron.log 2>&1
