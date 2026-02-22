@@ -1,5 +1,6 @@
 /.env
 /.vscode
+/.windsurf/
 
 # Local .env files
 *.env
@@ -25,5 +26,5 @@ datacenter_backup.remote.dump
 # Ignore all nested .git folders
 **/.git/
 
-# Ignore .gitignore itself
-.gitignore
+# Ignore Windsurf workspace metadata
+**/.windsurf/
