@@ -30,7 +30,7 @@ RUN chmod 0644 /etc/cron.d/sync-client
 
 # entrypoint สำหรับรันงานครั้งแรกก่อนเริ่ม cron
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN sed -i 's/\r//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 # รัน cron ใน foreground ผ่าน entrypoint
 ENTRYPOINT ["/entrypoint.sh"]
