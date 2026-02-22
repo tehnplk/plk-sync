@@ -14,7 +14,6 @@ ofelia_logs/
 plk-sync-server/
 /docker-cmd
 /docs
-/.windsurf
 
 # Database dumps
 datacenter_backup.dump
