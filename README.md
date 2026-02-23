@@ -21,7 +21,7 @@ cd plk-sync
 copy .env.example .env
 ```
 
-กำหนดค่าในไฟล์ `.env` เช่น
+กำหนดค่าในไฟล์ `.env`
 
 ```env
 API_URL=http://61.19.112.242:8000/raw
@@ -40,6 +40,7 @@ HIS_DB_CHARSET=utf8mb4
 ## 2) Start services
 
 ```bash
+docker compose down
 docker compose up -d --build
 ```
 
@@ -54,7 +55,9 @@ docker ps
 docker logs plk-sync
 ```
 
-## 4) สั่งรัน SQL ด้วยตนเองใน container
+## 4) การรัน SQL
+
+## 4.1) สั่งรัน SQL ด้วยตนเองใน container
 
 ```bash
 docker exec -it plk-sync python /app/sync_client.py 000_sync_test.sql
@@ -64,6 +67,26 @@ docker exec -it plk-sync python /app/sync_client.py 000_sync_test.sql
 
 ```bash
 docker exec -it plk-sync python /app/sync_client.py 002_sync_bed_type_all.sql
+```
+
+## 4.2) SQL scripts มาจากไหน
+
+SQL scripts จะถูกดึงจาก endpoint ที่กำหนดใน `.env` ผ่านตัวแปร `SYNC_SCRIPTS_URL` เช่น
+
+```text
+http://61.19.112.242:8000/sync-scripts
+```
+
+ดูรายการ script ทั้งหมด:
+
+```bash
+curl http://61.19.112.242:8000/sync-scripts
+```
+
+ดึง script รายตัว:
+
+```bash
+curl http://61.19.112.242:8000/sync-scripts/000_sync_test.sql
 ```
 
 ## 5) ตั้งเวลา cron jobs (ใน container)
