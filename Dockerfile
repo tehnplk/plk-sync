@@ -24,6 +24,9 @@ COPY . .
 # สร้างโฟลเดอร์สำหรับเก็บ Log ภายใน Container
 RUN mkdir -p /app/logs
 
+# ตั้งค่า logrotate สำหรับ log ของ cron
+RUN printf '/app/logs/*.log {\n    daily\n    rotate 3\n    compress\n    missingok\n    notifempty\n    copytruncate\n}\n' > /etc/logrotate.d/plk-sync
+
 # ติดตั้ง cron job จากไฟล์ภายใน image
 COPY cron.d/sync-client /etc/cron.d/sync-client
 RUN sed -i 's/\r//' /etc/cron.d/sync-client && chmod 0644 /etc/cron.d/sync-client

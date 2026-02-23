@@ -17,6 +17,11 @@ from urllib3.util.retry import Retry
 ERROR_LOG_PATH = os.path.join("logs", "err_message.log")
 
 
+def log(msg: str) -> None:
+    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print(f"[{ts}] {msg}")
+
+
 def load_config() -> dict[str, Any]:
     load_dotenv()
     return {
@@ -77,10 +82,10 @@ def run_single_sync(
     rows = fetch_rows(config, sql_text)
 
     if not rows:
-        print(f"No data to sync ({effective_file})")
+        log(f"[{effective_file}] no data to sync")
         return 0
 
-    print(f"Rows prepared ({effective_file}): {len(rows)}")
+    log(f"[{effective_file}] rows prepared: {len(rows)}")
 
     if dry_run:
         print(json.dumps(rows[0], ensure_ascii=False, indent=2))
@@ -93,7 +98,8 @@ def run_single_sync(
         rows,
         config,
     )
-    print(f"Sync finished ({effective_file}): success={success}, failed={failed}")
+    status = "success" if failed == 0 else "fail"
+    log(f"[{effective_file}] {status} success={success} failed={failed}")
     return 0 if failed == 0 else 1
 
 
@@ -251,7 +257,7 @@ def post_rows(
             if not body["hoscode"]:
                 failed += 1
                 append_error_log(f"post err: idx={index} missing hoscode")
-                print("[SKIP] missing hoscode in row")
+                log("[SKIP] missing hoscode in row")
                 continue
             batch.append((index, body))
             if len(batch) < batch_size:
@@ -288,7 +294,7 @@ def post_rows(
             if not hoscode:
                 failed += 1
                 append_error_log(f"post err: idx={index} missing hoscode")
-                print(f"[SKIP] missing hoscode in row idx={index}")
+                log(f"[SKIP] missing hoscode in row idx={index}")
                 continue
 
             body = build_body(row)
@@ -308,18 +314,18 @@ def post_rows(
                             body=response.text,
                         )
                     )
-                    print(
+                    log(
                         f"[FAIL] idx={index} hoscode={hoscode} "
                         f"status={response.status_code} body={response.text}"
                     )
             except requests.RequestException as error:
                 failed += 1
                 append_error_log(f"post err: idx={index} hoscode={hoscode} error={error}")
-                print(f"[ERROR] idx={index} hoscode={hoscode} error={error}")
+                log(f"[ERROR] idx={index} hoscode={hoscode} error={error}")
             finally:
                 processed += 1
                 if log_every and processed % log_every == 0:
-                    print(f"Progress: {processed}/{len(rows)} posted")
+                    log(f"progress: {processed}/{len(rows)} posted")
                 time.sleep(sleep_seconds)
 
     return success, failed
@@ -350,7 +356,7 @@ def post_batch(
                     body=response.text,
                 )
             )
-            print(
+            log(
                 f"[FAIL] batch idx={batch[0][0]}-{batch[-1][0]} "
                 f"status={response.status_code} body={response.text}"
             )
@@ -359,11 +365,11 @@ def post_batch(
         append_error_log(
             f"post err: batch idx={batch[0][0]}-{batch[-1][0]} error={error}"
         )
-        print(f"[ERROR] batch idx={batch[0][0]}-{batch[-1][0]} error={error}")
+        log(f"[ERROR] batch idx={batch[0][0]}-{batch[-1][0]} error={error}")
 
     processed += len(bodies)
     if log_every and processed % log_every == 0:
-        print(f"Progress: {processed} rows posted")
+        log(f"progress: {processed} rows posted")
     return success, failed, processed
 
 
@@ -385,11 +391,11 @@ def main() -> int:
     )
 
     if not sql_text.strip():
-        print(f"ไม่พบ script นี้บน server: {effective_file}")
+        log(f"[{effective_file}] ไม่พบ script นี้บน server")
         return 0
 
     if not is_active:
-        print(f"[SKIP] script นี้ถูกปิดใช้งาน (activate=False): {effective_file}")
+        log(f"[{effective_file}] skip activate=False")
         return 0
 
     return run_single_sync(config, effective_file, sql_text, args.dry_run)
