@@ -1,9 +1,6 @@
-# PLK Sync Client (Docker)
+# PLK Sync (Docker)
 
-คู่มือนี้เน้นการใช้งานผ่าน Docker container เป็นหลัก
-
-`sync-client` จะรัน SQL จากไฟล์ `sync_*.sql` แล้วส่งข้อมูลไปที่ API `POST /raw`  
-Scheduler ใช้ `cron` ภายใน container
+ระบบ Sync ข้อมูลจาก HIS ไปยัง Datacenter ผ่าน Docker container
 
 ## 0) รันคำสั่งจากโฟลเดอร์ root ของโปรเจกต์
 
