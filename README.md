@@ -2,6 +2,18 @@
 
 ระบบ Sync ข้อมูลจาก HIS ไปยัง Datacenter ผ่าน Docker container
 
+การติดตั้งใหม่
+
+```bash
+git clone https://github.com/tehnplk/plk-sync
+```
+
+อัปเดต (กรณีมีโปรเจกต์อยู่แล้ว)
+
+```bash
+git pull
+```
+
 ## 0) รันคำสั่งจากโฟลเดอร์ root ของโปรเจกต์
 
 ```bash
