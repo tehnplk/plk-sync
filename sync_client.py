@@ -109,6 +109,11 @@ def fetch_sql_from_endpoint(
     sync_file: str,
 ) -> tuple[str, str, bool]:
     name = sync_file.strip()
+    if name == '000_sync_test.sql':
+        # อ่านไฟล์ sync_test.sqlแล้ว return sql command
+        with open("000_sync_test.sql", "r", encoding="utf-8") as f:
+            sql_text = f.read()
+        return name, sql_text, True
     if not name:
         raise ValueError("sync file name is required")
     if not name.endswith(".sql"):
