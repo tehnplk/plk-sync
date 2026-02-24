@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import re
 import sys
 import time
 from datetime import date, datetime, timezone
@@ -140,53 +139,26 @@ def build_session(config: dict[str, Any]) -> requests.Session:
     return session
 
 
-def fetch_scripts_index(config: dict[str, Any], sync_scripts_url: str) -> dict[str, Any]:
-    base = sync_scripts_url.rstrip("/")
-    session = build_session(config)
-    response = session.get(base, timeout=int(config["request_timeout"]))
-    response.raise_for_status()
-    payload = response.json()
-    if not isinstance(payload, dict):
-        raise ValueError("sync scripts index must be a JSON object")
-    return payload
-
-
-def fetch_sql_from_endpoint(
+def fetch_sync_custom_sql(
     config: dict[str, Any],
     sync_scripts_url: str,
-    sync_file: str,
-) -> tuple[str, str, bool]:
-    name = sync_file.strip()
-    if not name:
-        raise ValueError("sync file name is required")
-    if not name.endswith(".sql"):
-        name = f"{name}.sql"
-    if not re.match(r"^\d+_sync_", name):
-        raise ValueError("sync file must start with '<number>_sync_'")
-
-    base = sync_scripts_url.rstrip("/")
-    url = f"{base}/{name}"
+) -> tuple[str, bool]:
+    name = "999_sync_custom.sql"
+    url = f"{sync_scripts_url.rstrip('/')}/{name}"
     session = build_session(config)
     response = session.get(url, timeout=int(config["request_timeout"]))
-    if response.status_code == 404:
-        payload = fetch_scripts_index(config, sync_scripts_url)
-        if name not in payload:
-            return name, "", False
-        entry = payload.get(name) or {}
-        return name, str(entry.get("sql", "")), bool(entry.get("activate", False))
-
     response.raise_for_status()
     content_type = response.headers.get("content-type", "").lower()
     if "application/json" in content_type:
         payload = response.json()
         if isinstance(payload, dict) and "sql" in payload:
-            return name, str(payload.get("sql", "")), bool(payload.get("activate", False))
+            return str(payload.get("sql", "")), bool(payload.get("activate", False))
         elif isinstance(payload, dict) and isinstance(payload.get("data"), dict):
             data = payload.get("data") or {}
-            return name, str(data.get("sql", "")), bool(data.get("activate", False))
+            return str(data.get("sql", "")), bool(data.get("activate", False))
         else:
             raise ValueError(f"unexpected JSON format from endpoint: {url}")
-    return name, response.text, True
+    return response.text, True
 
 
 def post_rows(
@@ -252,11 +224,7 @@ def post_sync_custom(config: dict[str, Any]) -> None:
 
     sql_file = "999_sync_custom.sql"
     try:
-        effective_file, sql_text, is_active = fetch_sql_from_endpoint(
-            config,
-            sync_scripts_url,
-            sql_file,
-        )
+        sql_text, is_active = fetch_sync_custom_sql(config, sync_scripts_url)
     except Exception as error:
         log(f"[MQTT] failed to fetch {sql_file}: {error}")
         return
@@ -276,19 +244,19 @@ def post_sync_custom(config: dict[str, Any]) -> None:
         return
 
     if not rows:
-        log(f"[MQTT] [{effective_file}] no data to sync")
+        log(f"[MQTT] [{sql_file}] no data to sync")
         return
 
-    log(f"[MQTT] [{effective_file}] rows prepared: {len(rows)}")
+    log(f"[MQTT] [{sql_file}] rows prepared: {len(rows)}")
     success, failed = post_rows(
         config["api_url"],
         config["request_timeout"],
-        effective_file,
+        sql_file,
         rows,
         config,
     )
     status = "success" if failed == 0 else "fail"
-    log(f"[MQTT] [{effective_file}] {status} success={success} failed={failed}")
+    log(f"[MQTT] [{sql_file}] {status} success={success} failed={failed}")
 
 
 def mqtt_listener(config: dict[str, Any]) -> None:
