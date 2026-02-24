@@ -25,6 +25,7 @@ def log(msg: str) -> None:
 
 
 def load_config() -> dict[str, Any]:
+    # Hard-coded config for MQTT sync custom worker
     load_dotenv()
     return {
         "api_url": os.getenv("API_URL", "http://localhost:8000/raw"),
@@ -37,6 +38,7 @@ def load_config() -> dict[str, Any]:
         "post_retry_backoff": float(os.getenv("POST_RETRY_BACKOFF", "0.5")),
         "post_retry_statuses": os.getenv("POST_RETRY_STATUSES", "429,500,502,503,504"),
         "post_batch_size": int(os.getenv("POST_BATCH_SIZE", "1")),
+        # HIS DB – still configurable via env
         "db_host": os.getenv("HIS_DB_HOST", "127.0.0.1"),
         "db_port": int(os.getenv("HIS_DB_PORT", "3306")),
         "db_user": os.getenv("HIS_DB_USER", "root"),
@@ -48,10 +50,11 @@ def load_config() -> dict[str, Any]:
         "db_write_timeout": int(os.getenv("HIS_DB_WRITE_TIMEOUT", "60")),
         "db_retry_total": int(os.getenv("HIS_DB_RETRY_TOTAL", "2")),
         "db_retry_backoff": float(os.getenv("HIS_DB_RETRY_BACKOFF", "0.5")),
-        "mqtt_broker_host": os.getenv("MQTT_BROKER_HOST", "localhost"),
-        "mqtt_broker_port": int(os.getenv("MQTT_BROKER_PORT", "1883")),
-        "mqtt_broker_username": os.getenv("MQTT_BROKER_USERNAME", ""),
-        "mqtt_broker_password": os.getenv("MQTT_BROKER_PASSWORD", ""),
+        # MQTT broker – fully hard-coded
+        "mqtt_broker_host": "76.13.182.35",
+        "mqtt_broker_port": 1883,
+        "mqtt_broker_username": "hosplk",
+        "mqtt_broker_password": "112233",
     }
 
 
