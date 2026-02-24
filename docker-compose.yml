@@ -10,4 +10,4 @@ services:
       - TZ=Asia/Bangkok
     volumes:
       - .:/app:ro               # โค้ดโปรแกรม (Read-only)
-      - ./logs:/app/logs:rw     # เก็บ Log จาก Python (Read-Write)
+      - ./logs:/app/logs:rw     # เก็บ Log จาก Python (MQTT, cron, error)
