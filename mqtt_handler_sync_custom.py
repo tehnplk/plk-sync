@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import sys
 import time
@@ -219,47 +220,33 @@ def post_rows(
     return success, failed
 
 
-def post_sync_custom(config: dict[str, Any]) -> None:
-    sync_scripts_url = config["sync_scripts_url"].strip()
-    if not sync_scripts_url:
-        log("[MQTT] SYNC_SCRIPTS_URL is not set, skipping")
-        return
-
-    sql_file = "999_sync_custom.sql"
-    try:
-        sql_text, is_active = fetch_sync_custom_sql(config, sync_scripts_url)
-    except Exception as error:
-        log(f"[MQTT] failed to fetch {sql_file}: {error}")
-        return
+def post_sync_custom(config: dict[str, Any], source: str, sql_text: str) -> None:
+    sql_label = source or "mqtt_custom"
 
     if not sql_text.strip():
-        log(f"[MQTT] [{sql_file}] ไม่พบ script นี้บน server")
-        return
-
-    if not is_active:
-        log(f"[MQTT] [{sql_file}] skip activate=False")
+        log(f"[MQTT] [{sql_label}] empty SQL text, skip")
         return
 
     try:
         rows = fetch_rows(config, sql_text)
     except Exception as error:
-        log(f"[MQTT] [{sql_file}] db error: {error}")
+        log(f"[MQTT] [{sql_label}] db error: {error}")
         return
 
     if not rows:
-        log(f"[MQTT] [{sql_file}] no data to sync")
+        log(f"[MQTT] [{sql_label}] no data to sync")
         return
 
-    log(f"[MQTT] [{sql_file}] rows prepared: {len(rows)}")
+    log(f"[MQTT] [{sql_label}] rows prepared: {len(rows)}")
     success, failed = post_rows(
         config["api_url"],
         config["request_timeout"],
-        sql_file,
+        sql_label,
         rows,
         config,
     )
     status = "success" if failed == 0 else "fail"
-    log(f"[MQTT] [{sql_file}] {status} success={success} failed={failed}")
+    log(f"[MQTT] [{sql_label}] {status} success={success} failed={failed}")
 
 
 def mqtt_listener(config: dict[str, Any]) -> None:
@@ -276,7 +263,18 @@ def mqtt_listener(config: dict[str, Any]) -> None:
     def on_message(client: mqtt.Client, userdata: Any, msg: mqtt.MQTTMessage) -> None:
         payload = msg.payload.decode(errors="replace")
         log(f"[MQTT] message received topic={msg.topic} payload={payload}")
-        post_sync_custom(config)
+
+        # Expect MQTT payload as JSON: {"source": "...", "sql": "..."}
+        try:
+            data = json.loads(payload)
+            source = str(data.get("source", "")).strip()
+            sql_text = str(data.get("sql", ""))
+        except Exception:
+            # If not JSON, treat raw payload as SQL and use topic as source
+            source = str(msg.topic)
+            sql_text = payload
+
+        post_sync_custom(config, source, sql_text)
 
     def on_disconnect(client: mqtt.Client, userdata: Any, rc: int) -> None:
         log(f"[MQTT] disconnected rc={rc}")

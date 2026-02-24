@@ -1,1 +1,1 @@
-SELECT (SELECT hospitalcode FROM opdconfig LIMIT 1) AS hoscode, '1.0.5-20260224' as version, NOW() as d_update LIMIT 1;
+SELECT (SELECT hospitalcode FROM opdconfig LIMIT 1) AS hoscode, '1.0.6-20260225' as version, NOW() as d_update LIMIT 1;
